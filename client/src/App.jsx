@@ -1,24 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, Sparkles, PlusCircle, ArrowUpDown, 
-  RotateCcw, Shield, Code2, LayoutGrid, List, Star
-} from 'lucide-react';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
-import ProjectCard from './components/ProjectCard';
+import FeaturedProjects from './components/FeaturedProjects';
+import DomainGrid from './components/DomainGrid';
+import WorkflowSection from './components/WorkflowSection';
+import CallToAction from './components/CallToAction';
+import GalleryView from './components/GalleryView';
+import CategoriesView from './components/CategoriesView';
+import SavedProjectsView from './components/SavedProjectsView';
 import ProjectModal from './components/ProjectModal';
 import SubmissionForm from './components/SubmissionForm';
 import AdminDashboard from './components/AdminDashboard';
-import AdminLoginModal from './components/AdminLoginModal';
+import StudentDashboard from './components/StudentDashboard';
+import AuthView from './components/AuthView';
 import Toast from './components/Toast';
-import { fetchPublicProjects, fetchTags, verifyAdminToken, fetchAdminStats } from './api';
+import { fetchPublicProjects, fetchTags, verifyAuthToken, fetchAdminStats } from './api';
+import { getProjectDomain } from './utils/domains';
 import './App.css';
 
+const VALID_TABS = ['home', 'gallery', 'categories', 'saved', 'submit', 'student-dashboard', 'admin', 'login'];
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState('gallery'); // 'gallery' | 'submit' | 'admin'
+  // Support hash-based navigation: '#/home', '#/gallery', '#/categories', '#/saved', '#/submit', '#/student-dashboard', '#/admin', '#/login'
+  const getInitialTab = () => {
+    const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
+    if (VALID_TABS.includes(hash)) {
+      return hash;
+    }
+    return 'home'; // default to Home page!
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [projects, setProjects] = useState([]);
   const [tags, setTags] = useState([]);
   const [selectedTag, setSelectedTag] = useState('');
+  const [selectedDomain, setSelectedDomain] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortBy, setSortBy] = useState('newest');
@@ -39,10 +55,18 @@ export default function App() {
   // Selected project for modal inspection
   const [selectedProject, setSelectedProject] = useState(null);
 
-  // Admin authentication
-  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('codenova_admin_token') || '');
-  const [adminUser, setAdminUser] = useState(null);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  // Unified User Authentication (Student or Admin)
+  const [authToken, setAuthToken] = useState(() => {
+    return localStorage.getItem('codenova_auth_token') || localStorage.getItem('codenova_admin_token') || '';
+  });
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('codenova_auth_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [pendingCount, setPendingCount] = useState(0);
 
   // Toast notification
@@ -51,6 +75,25 @@ export default function App() {
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
   };
+
+  // Sync activeTab with URL hash for browser history / direct links
+  const navigateToTab = (tab) => {
+    setActiveTab(tab);
+    window.location.hash = `#/${tab}`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Listen to hash changes (browser back/forward)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').split('?')[0];
+      if (VALID_TABS.includes(hash)) {
+        setActiveTab(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Debounce search input for instant reactive filtering
   useEffect(() => {
@@ -97,23 +140,28 @@ export default function App() {
     }
   };
 
-  // Check admin session & stats
+  // Check auth session & stats
   useEffect(() => {
-    if (adminToken) {
-      verifyAdminToken(adminToken).then(user => {
+    if (authToken) {
+      verifyAuthToken(authToken).then(user => {
         if (user) {
-          setAdminUser(user);
-          fetchAdminStats(adminToken).then(stats => {
-            if (stats) setPendingCount(stats.pending || 0);
-          }).catch(() => {});
+          setCurrentUser(user);
+          localStorage.setItem('codenova_auth_user', JSON.stringify(user));
+          if (user.role === 'admin') {
+            fetchAdminStats(authToken).then(stats => {
+              if (stats) setPendingCount(stats.pending || 0);
+            }).catch(() => {});
+          }
         } else {
-          setAdminToken('');
-          setAdminUser(null);
+          setAuthToken('');
+          setCurrentUser(null);
+          localStorage.removeItem('codenova_auth_token');
           localStorage.removeItem('codenova_admin_token');
+          localStorage.removeItem('codenova_auth_user');
         }
       });
     }
-  }, [adminToken]);
+  }, [authToken]);
 
   // Initial and reactive fetch
   useEffect(() => {
@@ -124,28 +172,39 @@ export default function App() {
     loadTags();
   }, []);
 
-  const handleAdminLoginSuccess = (token, user) => {
-    setAdminToken(token);
-    setAdminUser(user);
-    localStorage.setItem('codenova_admin_token', token);
-    setActiveTab('admin');
-    fetchAdminStats(token).then(stats => {
-      if (stats) setPendingCount(stats.pending || 0);
-    }).catch(() => {});
+  // Unified login handler
+  const handleLoginSuccess = (token, user) => {
+    setAuthToken(token);
+    setCurrentUser(user);
+    localStorage.setItem('codenova_auth_token', token);
+    localStorage.setItem('codenova_auth_user', JSON.stringify(user));
+
+    if (user.role === 'admin') {
+      localStorage.setItem('codenova_admin_token', token);
+      navigateToTab('admin');
+      fetchAdminStats(token).then(stats => {
+        if (stats) setPendingCount(stats.pending || 0);
+      }).catch(() => {});
+    } else {
+      navigateToTab('student-dashboard');
+    }
   };
 
-  const handleAdminLogout = () => {
-    setAdminToken('');
-    setAdminUser(null);
+  const handleLogout = () => {
+    setAuthToken('');
+    setCurrentUser(null);
+    localStorage.removeItem('codenova_auth_token');
     localStorage.removeItem('codenova_admin_token');
-    setActiveTab('gallery');
-    showToast('Administrator signed out successfully.', 'info');
+    localStorage.removeItem('codenova_auth_user');
+    navigateToTab('home');
+    showToast('You have been signed out successfully.', 'info');
   };
 
   const handleClearFilters = () => {
     setSearchInput('');
     setDebouncedSearch('');
     setSelectedTag('');
+    setSelectedDomain('');
     setSortBy('newest');
     setShowFavoritesOnly(false);
   };
@@ -153,8 +212,14 @@ export default function App() {
   const handleSubmissionSuccess = () => {
     loadProjects();
     loadTags();
-    if (adminToken) {
-      fetchAdminStats(adminToken).then(stats => {
+    if (currentUser?.role === 'student') {
+      navigateToTab('student-dashboard');
+    } else {
+      navigateToTab('gallery');
+    }
+    showToast('Project submitted! Pending faculty review before publishing.', 'success');
+    if (authToken && currentUser?.role === 'admin') {
+      fetchAdminStats(authToken).then(stats => {
         if (stats) setPendingCount(stats.pending || 0);
       }).catch(() => {});
     }
@@ -163,8 +228,8 @@ export default function App() {
   const handleModerationChange = () => {
     loadProjects();
     loadTags();
-    if (adminToken) {
-      fetchAdminStats(adminToken).then(stats => {
+    if (authToken && currentUser?.role === 'admin') {
+      fetchAdminStats(authToken).then(stats => {
         if (stats) setPendingCount(stats.pending || 0);
       }).catch(() => {});
     }
@@ -190,6 +255,12 @@ export default function App() {
     });
   };
 
+  const handleClearAllFavorites = () => {
+    setFavorites([]);
+    localStorage.removeItem('codenova_favorites');
+    showToast('Cleared all saved bookmarks.', 'info');
+  };
+
   // Copy project share link
   const handleCopyLink = (project) => {
     const url = `${window.location.origin}/?project=${project.id}`;
@@ -197,20 +268,40 @@ export default function App() {
     showToast(`Copied share link for "${project.title}"!`, 'success');
   };
 
-  // Tag click from card or modal
+  // Tag click from card, modal, or hero
   const handleTagClick = (tag) => {
     setSelectedTag(tag);
+    setSelectedDomain('');
     setShowFavoritesOnly(false);
-    const filterSection = document.getElementById('gallery-filters');
-    if (filterSection) {
-      filterSection.scrollIntoView({ behavior: 'smooth' });
-    }
+    navigateToTab('gallery');
   };
 
-  // Filter projects by favorites if toggled
-  const displayedProjects = showFavoritesOnly
-    ? projects.filter(p => favorites.includes(p.id))
-    : projects;
+  // Domain click from Home or Categories
+  const handleDomainClick = (domainId) => {
+    setSelectedDomain(domainId);
+    setSelectedTag('');
+    setShowFavoritesOnly(false);
+    navigateToTab('gallery');
+  };
+
+  // Quick search from Home hero
+  const handleQuickSearch = (query) => {
+    setSearchInput(query);
+    setDebouncedSearch(query);
+    navigateToTab('gallery');
+  };
+
+  // Client-side domain and favorites filtering for Gallery
+  const filteredProjects = projects.filter((project) => {
+    if (selectedDomain) {
+      const projDomain = getProjectDomain(project);
+      if (projDomain.id !== selectedDomain) return false;
+    }
+    if (showFavoritesOnly) {
+      if (!favorites.includes(project.id)) return false;
+    }
+    return true;
+  });
 
   return (
     <div className="app-layout">
@@ -228,295 +319,235 @@ export default function App() {
       {/* Top Navbar */}
       <Navbar 
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={navigateToTab}
         pendingCount={pendingCount}
-        isAdminLoggedIn={Boolean(adminToken && adminUser)}
-        onOpenAdminLogin={() => setIsAdminModalOpen(true)}
+        approvedCount={projects.length}
+        favoritesCount={favorites.length}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onOpenAuth={() => navigateToTab('login')}
       />
 
       <main className="main-content">
-        {activeTab === 'gallery' && (
-          <div className="gallery-view">
-            {/* Hero Section */}
+        {/* VIEW 1: HOME LANDING PAGE */}
+        {activeTab === 'home' && (
+          <div className="home-view">
+            {/* Split Hero Section */}
             <HeroSection 
-              onOpenSubmit={() => setActiveTab('submit')}
+              onOpenSubmit={() => navigateToTab('submit')}
+              onExploreGallery={() => navigateToTab('gallery')}
               approvedCount={projects.length}
               tagCount={tags.length}
               onSelectTag={handleTagClick}
+              onQuickSearch={handleQuickSearch}
+              featuredProject={projects[0]}
+              onSelectProject={(p) => setSelectedProject(p)}
             />
 
-            {/* Filter & Search Bar */}
-            <section 
-              id="gallery-filters" 
-              className="filter-section glass-panel" 
-              aria-label="Search and filter projects"
-            >
-              <div className="search-and-sort-row">
-                {/* Search Bar */}
-                <div className="search-bar-wrap">
-                  <Search size={18} className="search-icon" />
-                  <input 
-                    id="search-input"
-                    type="text"
-                    placeholder="Search projects by title, description, or student name..."
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    className="search-input"
-                  />
-                  {searchInput && (
-                    <button 
-                      id="search-clear-btn"
-                      className="search-clear-btn"
-                      onClick={() => setSearchInput('')}
-                      aria-label="Clear search"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
+            {/* Featured Innovations Spotlight */}
+            <FeaturedProjects 
+              projects={projects}
+              onSelectProject={(p) => setSelectedProject(p)}
+              onTagClick={handleTagClick}
+              favorites={favorites}
+              onToggleFavorite={handleToggleFavorite}
+              onExploreAll={() => navigateToTab('gallery')}
+            />
 
-                <div className="filter-controls-group">
-                  {/* Sort dropdown */}
-                  <div className="sort-wrap">
-                    <ArrowUpDown size={15} className="sort-icon" />
-                    <select 
-                      id="sort-select"
-                      value={sortBy} 
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="sort-select"
-                    >
-                      <option value="newest">Newest First</option>
-                      <option value="title">Alphabetical (A-Z)</option>
-                      <option value="oldest">Oldest First</option>
-                    </select>
-                  </div>
+            {/* Browse by Engineering Domain */}
+            <DomainGrid 
+              projects={projects}
+              onSelectDomain={handleDomainClick}
+            />
 
-                  {/* Favorites Toggle Button */}
-                  <button 
-                    className={`btn-filter-toggle ${showFavoritesOnly ? 'active' : ''}`}
-                    onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                    title={showFavoritesOnly ? 'Show all projects' : 'Show saved projects'}
-                  >
-                    <Star size={15} fill={showFavoritesOnly ? '#fbbf24' : 'none'} color={showFavoritesOnly ? '#fbbf24' : 'currentColor'} />
-                    <span>Saved ({favorites.length})</span>
-                  </button>
+            {/* Visual 4-Step Curation Pipeline */}
+            <WorkflowSection 
+              onOpenSubmit={() => navigateToTab('submit')}
+            />
 
-                  {/* Grid vs List View Mode Toggles */}
-                  <div className="view-mode-toggle-group">
-                    <button 
-                      className={`view-mode-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                      onClick={() => setViewMode('grid')}
-                      title="Grid View"
-                      aria-label="Grid View"
-                    >
-                      <LayoutGrid size={16} />
-                    </button>
-                    <button 
-                      className={`view-mode-btn ${viewMode === 'list' ? 'active' : ''}`}
-                      onClick={() => setViewMode('list')}
-                      title="List View"
-                      aria-label="List View"
-                    >
-                      <List size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Technology Tag Chips */}
-              <div className="tags-filter-bar">
-                <span className="tags-filter-label">
-                  <Code2 size={14} />
-                  <span>Stacks:</span>
-                </span>
-
-                <button 
-                  id="tag-all-btn"
-                  className={`tag-filter-chip ${selectedTag === '' ? 'tag-filter-active' : ''}`}
-                  onClick={() => setSelectedTag('')}
-                >
-                  All Technologies
-                </button>
-
-                {tags.map((t) => (
-                  <button 
-                    key={t.name}
-                    className={`tag-filter-chip ${selectedTag.toLowerCase() === t.name.toLowerCase() ? 'tag-filter-active' : ''}`}
-                    onClick={() => {
-                      if (selectedTag.toLowerCase() === t.name.toLowerCase()) {
-                        setSelectedTag('');
-                      } else {
-                        setSelectedTag(t.name);
-                      }
-                    }}
-                  >
-                    <span>{t.name}</span>
-                    <span className="tag-count-sub">{t.count}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Active Filter Indicators */}
-              {(debouncedSearch || selectedTag || showFavoritesOnly) && (
-                <div className="active-filters-row">
-                  <span className="active-filters-info">
-                    Showing results for: 
-                    {debouncedSearch && <strong> "{debouncedSearch}"</strong>}
-                    {debouncedSearch && selectedTag && ' + '}
-                    {selectedTag && <strong> #{selectedTag}</strong>}
-                    {showFavoritesOnly && <strong> [Saved Favorites Only]</strong>}
-                    {' '}({displayedProjects.length} found)
-                  </span>
-                  <button 
-                    id="clear-all-filters-btn"
-                    className="btn-clear-filters"
-                    onClick={handleClearFilters}
-                  >
-                    <RotateCcw size={13} />
-                    <span>Clear all filters</span>
-                  </button>
-                </div>
-              )}
-            </section>
-
-            {/* Project Gallery Grid or List */}
-            <section className="gallery-section">
-              <div className="gallery-header-row">
-                <h2 className="section-title">
-                  Approved Showcase
-                  <span className="title-count-pill">{displayedProjects.length}</span>
-                </h2>
-                <div className="gallery-header-meta">
-                  <span>Displaying verified student work</span>
-                </div>
-              </div>
-
-              {isLoading ? (
-                <div className={`gallery-grid ${viewMode === 'list' ? 'gallery-list' : ''}`}>
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="project-card skeleton-card">
-                      <div className="skeleton" style={{ height: '40px', width: '50%', marginBottom: '12px' }} />
-                      <div className="skeleton" style={{ height: '24px', width: '85%', marginBottom: '10px' }} />
-                      <div className="skeleton" style={{ height: '70px', width: '100%', marginBottom: '16px' }} />
-                      <div className="skeleton" style={{ height: '24px', width: '60%' }} />
-                    </div>
-                  ))}
-                </div>
-              ) : displayedProjects.length === 0 ? (
-                <div className="empty-gallery glass-panel">
-                  <div className="empty-icon-wrap">
-                    <Search size={36} />
-                  </div>
-                  <h3 className="empty-title">
-                    {showFavoritesOnly ? 'No saved projects yet' : 'No projects match your filter criteria'}
-                  </h3>
-                  <p className="empty-desc">
-                    {showFavoritesOnly
-                      ? 'You have not bookmarked any projects yet. Click the star icon on any card to save it here!'
-                      : (debouncedSearch || selectedTag) 
-                        ? 'Try clearing your search query or selecting a different technology stack.'
-                        : 'No approved projects have been published yet. Be the first student to submit!'}
-                  </p>
-                  <div className="empty-actions">
-                    {(debouncedSearch || selectedTag || showFavoritesOnly) ? (
-                      <button className="btn-secondary" onClick={handleClearFilters}>
-                        Reset Filters
-                      </button>
-                    ) : (
-                      <button className="btn-primary" onClick={() => setActiveTab('submit')}>
-                        <PlusCircle size={16} />
-                        <span>Submit Project</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div 
-                  className={`gallery-grid ${viewMode === 'list' ? 'gallery-list' : ''}`}
-                  id="public-gallery-grid"
-                >
-                  {displayedProjects.map((project) => (
-                    <ProjectCard 
-                      key={project.id}
-                      project={project}
-                      viewMode={viewMode}
-                      isFavorited={favorites.includes(project.id)}
-                      onToggleFavorite={handleToggleFavorite}
-                      onSelectProject={(p) => setSelectedProject(p)}
-                      onTagClick={handleTagClick}
-                      onCopyLink={handleCopyLink}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
+            {/* Student Showcase Call to Action */}
+            <CallToAction 
+              onOpenSubmit={() => navigateToTab('submit')}
+              onExploreGallery={() => navigateToTab('gallery')}
+            />
           </div>
         )}
 
-        {/* Submit View */}
+        {/* VIEW 2: DEDICATED SHOWCASE GALLERY */}
+        {activeTab === 'gallery' && (
+          <div className="gallery-page-view">
+            <GalleryView 
+              projects={filteredProjects}
+              tags={tags}
+              searchInput={searchInput}
+              setSearchInput={setSearchInput}
+              debouncedSearch={debouncedSearch}
+              selectedTag={selectedTag}
+              setSelectedTag={setSelectedTag}
+              selectedDomain={selectedDomain}
+              setSelectedDomain={setSelectedDomain}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              showFavoritesOnly={showFavoritesOnly}
+              setShowFavoritesOnly={setShowFavoritesOnly}
+              favorites={favorites}
+              isLoading={isLoading}
+              onClearFilters={handleClearFilters}
+              onToggleFavorite={handleToggleFavorite}
+              onSelectProject={(p) => setSelectedProject(p)}
+              onTagClick={handleTagClick}
+              onCopyLink={handleCopyLink}
+              onOpenSubmit={() => navigateToTab('submit')}
+            />
+          </div>
+        )}
+
+        {/* VIEW 3: DOMAINS & TECH STACKS DIRECTORY */}
+        {activeTab === 'categories' && (
+          <div className="categories-page-view">
+            <CategoriesView 
+              projects={projects}
+              tags={tags}
+              onSelectDomain={handleDomainClick}
+              onSelectTag={handleTagClick}
+            />
+          </div>
+        )}
+
+        {/* VIEW 4: PERSONAL SAVED BOOKMARKS */}
+        {activeTab === 'saved' && (
+          <div className="saved-page-view">
+            <SavedProjectsView 
+              projects={projects}
+              favorites={favorites}
+              onToggleFavorite={handleToggleFavorite}
+              onClearFavorites={handleClearAllFavorites}
+              onSelectProject={(p) => setSelectedProject(p)}
+              onTagClick={handleTagClick}
+              onCopyLink={handleCopyLink}
+              onExploreGallery={() => navigateToTab('gallery')}
+            />
+          </div>
+        )}
+
+        {/* VIEW 5: PROJECT SUBMISSION FORM */}
         {activeTab === 'submit' && (
           <div className="submit-view">
             <SubmissionForm 
               onSuccess={handleSubmissionSuccess}
-              onCancel={() => setActiveTab('gallery')}
+              onCancel={() => navigateToTab('gallery')}
               showToast={showToast}
+              currentUser={currentUser}
+              authToken={authToken}
             />
           </div>
         )}
 
-        {/* Admin Moderation View */}
+        {/* VIEW 6: STUDENT DASHBOARD ("MY SUBMISSIONS") */}
+        {activeTab === 'student-dashboard' && (
+          <div className="student-dashboard-view">
+            {currentUser ? (
+              <StudentDashboard 
+                token={authToken}
+                user={currentUser}
+                onLogout={handleLogout}
+                onOpenSubmit={() => navigateToTab('submit')}
+                onSelectProject={(p) => setSelectedProject(p)}
+                showToast={showToast}
+              />
+            ) : (
+              <AuthView 
+                onLoginSuccess={handleLoginSuccess}
+                onCancel={() => navigateToTab('home')}
+                showToast={showToast}
+              />
+            )}
+          </div>
+        )}
+
+        {/* VIEW 7: MODERATOR ADMIN PORTAL */}
         {activeTab === 'admin' && (
           <div className="admin-view">
-            {adminToken && adminUser ? (
+            {currentUser && currentUser.role === 'admin' ? (
               <AdminDashboard 
-                token={adminToken}
-                adminUser={adminUser}
-                onLogout={handleAdminLogout}
+                token={authToken}
+                adminUser={currentUser}
+                onLogout={handleLogout}
                 onSelectProject={(p) => setSelectedProject(p)}
                 showToast={showToast}
                 onStatusChange={handleModerationChange}
               />
             ) : (
-              <div className="admin-locked-notice glass-panel">
-                <Shield size={44} className="text-primary" />
-                <h2>Admin Moderation Access Required</h2>
-                <p>You must authenticate as an authorized moderator to review and publish student projects.</p>
-                <button 
-                  className="btn-primary" 
-                  onClick={() => setIsAdminModalOpen(true)}
-                >
-                  Open Moderator Login
-                </button>
-              </div>
+              <AuthView 
+                onLoginSuccess={handleLoginSuccess}
+                onCancel={() => navigateToTab('home')}
+                showToast={showToast}
+                defaultRole="admin"
+              />
             )}
+          </div>
+        )}
+
+        {/* VIEW 8: AUTHENTICATION (SIGN IN & REGISTER) */}
+        {activeTab === 'login' && (
+          <div className="auth-view-page">
+            <AuthView 
+              onLoginSuccess={handleLoginSuccess}
+              onCancel={() => navigateToTab('home')}
+              showToast={showToast}
+            />
           </div>
         )}
       </main>
 
-      {/* Footer */}
+      {/* App Footer */}
       <footer className="app-footer">
         <div className="footer-content">
-          <div className="footer-left">
-            <div className="brand footer-brand">
-              <Sparkles size={16} className="brand-icon" />
+          <div className="footer-col-brand">
+            <div className="brand footer-brand" onClick={() => navigateToTab('home')}>
+              <div className="brand-icon-wrapper-small">
+                <span style={{ fontSize: '14px' }}>✨</span>
+              </div>
               <span className="brand-title">CodeNova</span>
             </div>
             <p className="footer-copy">
-              Student Project Showcase Portal — CodeNova Batch 01 Internship Task 4.
+              A verified showcase portal celebrating student engineering talent, research prototypes, and open-source applications.
             </p>
+            <div className="footer-batch-badge">
+              <span>CodeNova Batch 01 · Internship Capstone</span>
+            </div>
           </div>
-          <div className="footer-links">
-            <button 
-              className="footer-link-btn"
-              onClick={() => {
-                if (adminToken) setActiveTab('admin');
-                else setIsAdminModalOpen(true);
-              }}
-            >
-              <Shield size={14} />
-              <span>Moderator Portal</span>
-            </button>
+
+          <div className="footer-col-nav">
+            <h4 className="footer-heading">Navigation</h4>
+            <ul className="footer-links-list">
+              <li><button onClick={() => navigateToTab('home')}>Home Showcase</button></li>
+              <li><button onClick={() => navigateToTab('gallery')}>Explore Projects ({projects.length})</button></li>
+              <li><button onClick={() => navigateToTab('categories')}>Domains & Stacks</button></li>
+              <li><button onClick={() => navigateToTab('saved')}>Saved Bookmarks ({favorites.length})</button></li>
+            </ul>
           </div>
+
+          <div className="footer-col-nav">
+            <h4 className="footer-heading">Accounts & Access</h4>
+            <ul className="footer-links-list">
+              <li><button onClick={() => navigateToTab('submit')}>Submit New Project</button></li>
+              {currentUser?.role === 'student' && (
+                <li><button onClick={() => navigateToTab('student-dashboard')}>My Submissions</button></li>
+              )}
+              {currentUser?.role === 'admin' ? (
+                <li><button onClick={() => navigateToTab('admin')}>Admin Moderator Portal</button></li>
+              ) : (
+                <li><button onClick={() => navigateToTab('login')}>Sign In / Student Account</button></li>
+              )}
+            </ul>
+          </div>
+        </div>
+
+        <div className="footer-bottom-bar">
+          <p>© 2026 CodeNova Student Showcase. Built with React 19, SQLite, and Express.</p>
         </div>
       </footer>
 
@@ -528,14 +559,6 @@ export default function App() {
           onTagClick={handleTagClick}
         />
       )}
-
-      {/* Admin Login Modal */}
-      <AdminLoginModal 
-        isOpen={isAdminModalOpen}
-        onClose={() => setIsAdminModalOpen(false)}
-        onLoginSuccess={handleAdminLoginSuccess}
-        showToast={showToast}
-      />
     </div>
   );
 }

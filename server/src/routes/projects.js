@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const db = require('../database');
 const { validateProjectSubmission } = require('../validation');
+const { JWT_SECRET } = require('../middleware/auth');
 
 // Helper to safely parse tags JSON
 function parseTags(tagsStr) {
@@ -14,7 +16,7 @@ function parseTags(tagsStr) {
 
 /**
  * POST /api/projects
- * Public project submission
+ * Public project submission (with optional student authorization attachment)
  * FR-01, TC-01, TC-02, TC-03
  */
 router.post('/projects', (req, res) => {
@@ -29,18 +31,31 @@ router.post('/projects', (req, res) => {
       });
     }
 
+    // Attach student email from auth header if present
+    let studentEmail = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+        if (decoded && decoded.email) {
+          studentEmail = decoded.email.toLowerCase();
+        }
+      } catch (_) {}
+    }
+
     const projectId = 'proj_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
     const now = new Date().toISOString();
 
     const insert = db.prepare(`
-      INSERT INTO projects (id, title, student_name, description, tags, github_url, demo_url, status, admin_notes, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', null, ?, ?)
+      INSERT INTO projects (id, title, student_name, student_email, description, tags, github_url, demo_url, status, admin_notes, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', null, ?, ?)
     `);
 
     insert.run(
       projectId,
       cleanedData.title,
       cleanedData.student_name,
+      studentEmail,
       cleanedData.description,
       JSON.stringify(cleanedData.tags),
       cleanedData.github_url,
@@ -121,7 +136,6 @@ router.get('/projects', (req, res) => {
       }))
       .filter(project => {
         if (targetTags.length === 0) return true;
-        // Project must contain all selected tags (or any depending on filter)
         const projectLowerTags = project.tags.map(t => t.toLowerCase());
         return targetTags.some(selectedTag => projectLowerTags.includes(selectedTag));
       });

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ExternalLink, ArrowUpRight, Calendar, Star, Share2, Check } from 'lucide-react';
 import { GithubIcon } from './Icons';
+import { getProjectDomain } from '../utils/domains';
 
 // Generates a consistent pleasant background gradient based on name
 function getAvatarGradient(name = '') {
@@ -30,6 +31,8 @@ export default function ProjectCard({
 }) {
   const [copied, setCopied] = useState(false);
   const { id, title, student_name, description, tags = [], github_url, demo_url, created_at } = project;
+
+  const domain = getProjectDomain(project);
 
   const initials = student_name
     ? student_name
@@ -101,6 +104,16 @@ export default function ProjectCard({
 
           <div className="card-list-info">
             <div className="card-list-header">
+              <span 
+                className="domain-pill-mini"
+                style={{ 
+                  color: domain.color, 
+                  background: `${domain.color}15`,
+                  borderColor: `${domain.color}35` 
+                }}
+              >
+                {domain.shortName}
+              </span>
               <h3 className="project-title-list" title={title}>{title}</h3>
               <span className="card-list-author">by {student_name}</span>
               {formattedDate && (
@@ -174,6 +187,7 @@ export default function ProjectCard({
                 title="Live Demo"
                 id={`btn-demo-${id}`}
               >
+                <span className="live-demo-beacon" />
                 <ExternalLink size={14} />
               </a>
             )}
@@ -201,6 +215,9 @@ export default function ProjectCard({
     >
       <div className="card-spotlight-glow" />
 
+      {/* Domain Accent Top Line */}
+      <div className="card-top-accent" style={{ background: domain.gradient }} />
+
       {/* Top Header */}
       <div className="card-header">
         <div className="student-profile">
@@ -213,12 +230,24 @@ export default function ProjectCard({
           </div>
           <div className="student-info">
             <span className="student-name">{student_name}</span>
-            {formattedDate && (
-              <span className="project-date">
-                <Calendar size={12} />
-                {formattedDate}
+            <div className="student-sub-row">
+              <span 
+                className="domain-pill-mini"
+                style={{ 
+                  color: domain.color, 
+                  background: `${domain.color}15`,
+                  borderColor: `${domain.color}35` 
+                }}
+              >
+                {domain.shortName}
               </span>
-            )}
+              {formattedDate && (
+                <span className="project-date">
+                  <Calendar size={11} />
+                  {formattedDate}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -247,7 +276,7 @@ export default function ProjectCard({
             title="View detailed project overview"
             aria-label={`Inspect ${title}`}
           >
-            <ArrowUpRight size={18} />
+            <ArrowUpRight size={17} />
           </button>
         </div>
       </div>
@@ -292,7 +321,7 @@ export default function ProjectCard({
             title="Open GitHub Repository"
             id={`btn-github-${id}`}
           >
-            <GithubIcon size={16} />
+            <GithubIcon size={15} />
             <span>Repository</span>
           </a>
         )}
@@ -306,7 +335,8 @@ export default function ProjectCard({
             title="Launch Live Demo"
             id={`btn-demo-${id}`}
           >
-            <ExternalLink size={16} />
+            <span className="live-demo-beacon" />
+            <ExternalLink size={15} />
             <span>Live Demo</span>
           </a>
         )}

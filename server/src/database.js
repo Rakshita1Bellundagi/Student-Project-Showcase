@@ -57,6 +57,27 @@ function initializeDatabase() {
     console.log('[Database] Default admin user initialized: admin@codenova.edu / Admin@123');
   }
 
+  // Seed default student if not exists
+  const studentCheck = db.prepare('SELECT id FROM users WHERE email = ?').get('student@codenova.edu');
+  if (!studentCheck) {
+    const salt = bcrypt.genSaltSync(10);
+    const passwordHash = bcrypt.hashSync('Student@123', salt);
+    const studentId = 'usr_student_' + Date.now();
+    db.prepare(`
+      INSERT INTO users (id, email, password_hash, name, role, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(studentId, 'student@codenova.edu', passwordHash, 'Aarav Sharma', 'student', new Date().toISOString());
+    console.log('[Database] Default student user initialized: student@codenova.edu / Student@123');
+  }
+
+  // Add optional student_email column if not already present
+  try {
+    db.exec('ALTER TABLE projects ADD COLUMN student_email TEXT;');
+  } catch (_) {
+    // Column already exists
+  
+  }
+
   // Seed initial projects if empty
   const projectCount = db.prepare('SELECT COUNT(*) as count FROM projects').get().count;
   if (projectCount === 0) {

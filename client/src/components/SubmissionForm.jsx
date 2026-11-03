@@ -61,8 +61,22 @@ const INITIAL_FORM = {
   demo_url: ''
 };
 
-export default function SubmissionForm({ onSuccess, onCancel, showToast }) {
-  const [formData, setFormData] = useState(INITIAL_FORM);
+export default function SubmissionForm({ onSuccess, onCancel, showToast, currentUser, authToken }) {
+  const [formData, setFormData] = useState(() => ({
+    ...INITIAL_FORM,
+    student_name: currentUser?.name || '',
+    student_email: currentUser?.email || ''
+  }));
+
+  React.useEffect(() => {
+    if (currentUser?.name && !formData.student_name) {
+      setFormData(prev => ({
+        ...prev,
+        student_name: currentUser.name,
+        student_email: currentUser.email || ''
+      }));
+    }
+  }, [currentUser]);
   const [customTagInput, setCustomTagInput] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -211,7 +225,7 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast }) {
 
     setIsSubmitting(true);
     try {
-      const response = await submitProject(formData);
+      const response = await submitProject(formData, authToken);
       setSubmittedSuccess(response.project);
       showToast('Project submitted successfully! It is now pending moderation.', 'success');
       if (onSuccess) onSuccess(response.project);

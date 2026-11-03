@@ -30,10 +30,15 @@ export async function fetchTags() {
   return data.tags || [];
 }
 
-export async function submitProject(formData) {
+export async function submitProject(formData, token = null) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API_BASE}/projects`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(formData)
   });
   const data = await res.json();
@@ -45,7 +50,7 @@ export async function submitProject(formData) {
   return data;
 }
 
-export async function loginAdmin(email, password) {
+export async function loginUser(email, password) {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -56,7 +61,18 @@ export async function loginAdmin(email, password) {
   return data;
 }
 
-export async function verifyAdminToken(token) {
+export async function registerStudent(userData) {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Registration failed');
+  return data;
+}
+
+export async function verifyAuthToken(token) {
   const res = await fetch(`${API_BASE}/auth/me`, {
     headers: {
       'Authorization': `Bearer ${token}`
@@ -66,6 +82,33 @@ export async function verifyAdminToken(token) {
   const data = await res.json();
   return data.user;
 }
+
+export async function fetchMySubmissions(token) {
+  const res = await fetch(`${API_BASE}/auth/my-submissions`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to fetch your submissions');
+  return data.submissions || [];
+}
+
+export async function deleteMySubmission(token, id) {
+  const res = await fetch(`${API_BASE}/auth/my-submissions/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to withdraw submission');
+  return data;
+}
+
+// Backward compatibility alias
+export const loginAdmin = loginUser;
+export const verifyAdminToken = verifyAuthToken;
 
 export async function fetchAdminStats(token) {
   const res = await fetch(`${API_BASE}/admin/stats`, {
