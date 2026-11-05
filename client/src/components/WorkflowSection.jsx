@@ -40,7 +40,7 @@ export default function WorkflowSection({ onOpenSubmit }) {
           <span>Quality Standard</span>
         </div>
         <h2 className="section-title-large">
-          The CodeNova <span className="gradient-text">Curation Pipeline</span>
+          Our <span className="gradient-text">Curation Pipeline</span>
         </h2>
         <p className="section-subtitle">
           How every student project is verified before receiving showcase honors.

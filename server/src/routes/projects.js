@@ -43,6 +43,44 @@ router.post('/projects', (req, res) => {
       } catch (_) {}
     }
 
+    // ── Duplicate Detection ────────────────────────────────────────────────
+    // Rule 1: Same GitHub URL already exists (strongest signal — one repo = one project)
+    const existingByGithub = db.prepare(
+      'SELECT id, title, status FROM projects WHERE LOWER(github_url) = ?'
+    ).get(cleanedData.github_url.trim().toLowerCase());
+
+    if (existingByGithub) {
+      return res.status(409).json({
+        success: false,
+        duplicate: true,
+        field: 'github_url',
+        message: `This GitHub repository has already been submitted as "${existingByGithub.title}" (status: ${existingByGithub.status}). Each repository can only be showcased once.`
+      });
+    }
+
+    // Rule 2: Same student (by email OR name) + same title already exists
+    let existingByStudentTitle = null;
+    if (studentEmail) {
+      existingByStudentTitle = db.prepare(
+        'SELECT id, title, status FROM projects WHERE LOWER(student_email) = ? AND LOWER(title) = ?'
+      ).get(studentEmail, cleanedData.title.trim().toLowerCase());
+    }
+    if (!existingByStudentTitle) {
+      existingByStudentTitle = db.prepare(
+        'SELECT id, title, status FROM projects WHERE LOWER(student_name) = ? AND LOWER(title) = ?'
+      ).get(cleanedData.student_name.trim().toLowerCase(), cleanedData.title.trim().toLowerCase());
+    }
+
+    if (existingByStudentTitle) {
+      return res.status(409).json({
+        success: false,
+        duplicate: true,
+        field: 'title',
+        message: `You have already submitted a project titled "${existingByStudentTitle.title}" (status: ${existingByStudentTitle.status}). Each student can submit the same project only once.`
+      });
+    }
+    // ── End Duplicate Detection ────────────────────────────────────────────
+
     const projectId = 'proj_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
     const now = new Date().toISOString();
 

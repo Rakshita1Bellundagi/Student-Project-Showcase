@@ -34,8 +34,8 @@ export default function Navbar({
           </div>
           <div className="brand-text">
             <div className="brand-title-row">
-              <span className="brand-title">CodeNova</span>
-              <span className="brand-pill-tag">B-01</span>
+              <span className="brand-title">Student Showcase</span>
+              
             </div>
             <span className="brand-subtitle">Project Showcase</span>
           </div>

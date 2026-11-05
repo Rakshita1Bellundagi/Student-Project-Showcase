@@ -34,7 +34,7 @@ export default function ProjectModal({ project, onClose, onTagClick }) {
   const shareUrl = `${window.location.origin}/?project=${id}`;
   const cloneCommand = github_url ? `git clone ${github_url}.git` : '';
   const projectYear = created_at ? new Date(created_at).getFullYear() : 2026;
-  const citationText = `${student_name} (${projectYear}). "${title}" — CodeNova Student Showcase Portal. Available at: ${github_url || shareUrl}`;
+  const citationText = `${student_name} (${projectYear}). "${title}" — Project Showcase Student Showcase Portal. Available at: ${github_url || shareUrl}`;
 
   const handleCopyClone = () => {
     if (!cloneCommand) return;

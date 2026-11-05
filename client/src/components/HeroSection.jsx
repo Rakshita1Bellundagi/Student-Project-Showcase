@@ -55,7 +55,7 @@ export default function HeroSection({
         <div className="hero-left-col">
           <div className="hero-badge-pill">
             <Sparkles size={14} className="hero-sparkle-icon" />
-            <span>CodeNova Batch 01 Showcase Portal</span>
+            <span>Student Project Showcase Portal</span>
             <span className="hero-live-beacon" />
           </div>
 
@@ -154,7 +154,7 @@ export default function HeroSection({
                 </div>
                 <div>
                   <h4 className="spotlight-author-name">{spotlight.student_name}</h4>
-                  <span className="spotlight-author-sub">Student Engineer · CodeNova</span>
+                  <span className="spotlight-author-sub">Student Engineer · Student Showcase</span>
                 </div>
               </div>
 

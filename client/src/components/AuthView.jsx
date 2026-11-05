@@ -75,7 +75,7 @@ export default function AuthView({
   const handleQuickLogin = async (role) => {
     setErrorMsg('');
     setIsSubmitting(true);
-    const demoEmail = role === 'admin' ? 'admin@codenova.edu' : 'student@codenova.edu';
+    const demoEmail = role === 'admin' ? 'admin@showcase.edu' : 'student@showcase.edu';
     const demoPassword = role === 'admin' ? 'Admin@123' : 'Student@123';
     
     setEmail(demoEmail);
@@ -101,12 +101,12 @@ export default function AuthView({
         <div className="auth-header">
           <div className="auth-brand-badge">
             <Sparkles size={16} className="text-primary" />
-            <span>CodeNova Authentication</span>
+            <span>Project Showcase Authentication</span>
           </div>
 
           <h2 className="auth-title">
             {mode === 'login' ? (
-              <>Sign In to <span className="gradient-text">CodeNova</span></>
+              <>Sign In to <span className="gradient-text">Project Showcase</span></>
             ) : (
               <>Join the <span className="gradient-text">Showcase</span></>
             )}
@@ -203,7 +203,7 @@ export default function AuthView({
               <input 
                 id="auth-email"
                 type="email"
-                placeholder="name@university.edu or student@codenova.edu"
+                placeholder="name@university.edu or student@showcase.edu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="form-input"

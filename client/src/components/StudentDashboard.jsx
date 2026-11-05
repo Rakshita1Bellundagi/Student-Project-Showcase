@@ -144,7 +144,7 @@ export default function StudentDashboard({
         <div className="submissions-section-header">
           <div>
             <h2 className="section-title">Your Project Portfolio</h2>
-            <p className="section-subtitle">Real-time status of all projects you have submitted to CodeNova.</p>
+            <p className="section-subtitle">Real-time status of all projects you have submitted to Project Showcase.</p>
           </div>
           <button className="btn-secondary btn-refresh" onClick={loadSubmissions} disabled={isLoading}>
             <RefreshCw size={14} className={isLoading ? 'spinning' : ''} />

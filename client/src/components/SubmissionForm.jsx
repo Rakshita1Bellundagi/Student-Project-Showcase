@@ -81,6 +81,7 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedSuccess, setSubmittedSuccess] = useState(null);
+  const [duplicateError, setDuplicateError] = useState(null); // { field, message }
   const [mobileTab, setMobileTab] = useState('form'); // 'form' | 'preview'
 
   // Validation logic
@@ -224,13 +225,24 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
     }
 
     setIsSubmitting(true);
+    setDuplicateError(null);
     try {
       const response = await submitProject(formData, authToken);
       setSubmittedSuccess(response.project);
       showToast('Project submitted successfully! It is now pending moderation.', 'success');
       if (onSuccess) onSuccess(response.project);
     } catch (err) {
-      showToast(err.message || 'Submission failed. Please check inputs.', 'error');
+      // Handle duplicate submission (HTTP 409)
+      if (err.duplicate) {
+        setDuplicateError({ field: err.field, message: err.message });
+        // Highlight the duplicate field inline
+        if (err.field) {
+          setErrors(prev => ({ ...prev, [err.field]: err.message }));
+        }
+        showToast('Duplicate submission detected!', 'error');
+      } else {
+        showToast(err.message || 'Submission failed. Please check inputs.', 'error');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -373,6 +385,23 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
               />
             </div>
           </div>
+
+          {/* Duplicate Submission Banner */}
+          {duplicateError && (
+            <div className="duplicate-error-banner" role="alert">
+              <div className="dup-banner-icon">⚠️</div>
+              <div className="dup-banner-body">
+                <strong>Duplicate Submission Detected</strong>
+                <p>{duplicateError.message}</p>
+              </div>
+              <button
+                type="button"
+                className="dup-banner-close"
+                onClick={() => setDuplicateError(null)}
+                aria-label="Dismiss"
+              >×</button>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} noValidate>
             {/* Project Title */}

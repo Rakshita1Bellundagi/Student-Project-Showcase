@@ -45,6 +45,11 @@ export async function submitProject(formData, token = null) {
   if (!res.ok) {
     const error = new Error(data.message || 'Submission failed');
     error.errors = data.errors || {};
+    // Carry duplicate detection fields for HTTP 409
+    if (res.status === 409) {
+      error.duplicate = true;
+      error.field = data.field || null;
+    }
     throw error;
   }
   return data;

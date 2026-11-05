@@ -51,7 +51,7 @@ export default function CategoriesView({
           Engineering Domains & <span className="gradient-text">Technology Stacks</span>
         </h1>
         <p className="categories-page-sub">
-          Browse CodeNova's academic catalog categorized by engineering discipline and core programming frameworks.
+          Browse our academic catalog categorized by engineering discipline and core programming frameworks.
         </p>
       </div>
 

@@ -510,13 +510,13 @@ export default function App() {
               <div className="brand-icon-wrapper-small">
                 <span style={{ fontSize: '14px' }}>✨</span>
               </div>
-              <span className="brand-title">CodeNova</span>
+              <span className="brand-title">Student Showcase</span>
             </div>
             <p className="footer-copy">
               A verified showcase portal celebrating student engineering talent, research prototypes, and open-source applications.
             </p>
             <div className="footer-batch-badge">
-              <span>CodeNova Batch 01 · Internship Capstone</span>
+              <span>Student Showcase · Internship Capstone</span>
             </div>
           </div>
 
@@ -547,7 +547,7 @@ export default function App() {
         </div>
 
         <div className="footer-bottom-bar">
-          <p>© 2026 CodeNova Student Showcase. Built with React 19, SQLite, and Express.</p>
+          <p>© 2026 Student Project Showcase. Built with React 19, SQLite, and Express.</p>
         </div>
       </footer>
 
