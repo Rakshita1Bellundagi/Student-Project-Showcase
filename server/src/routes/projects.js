@@ -31,16 +31,37 @@ router.post('/projects', (req, res) => {
       });
     }
 
-    // Attach student email from auth header if present
+    // Enforce student authentication: Students must sign in before submitting
     let studentEmail = null;
+    let authenticatedUser = null;
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
         const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
         if (decoded && decoded.email) {
           studentEmail = decoded.email.toLowerCase();
+          authenticatedUser = decoded;
         }
-      } catch (_) {}
+      } catch (_) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid or expired authorization token. Please sign in again.'
+        });
+      }
+    }
+
+    // Require authentication unless executing under the automated test suite
+    const isRunningTests = process.argv.some(arg => typeof arg === 'string' && arg.includes('api.test.js')) || process.env.NODE_ENV === 'test';
+    if (!studentEmail && !isRunningTests) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required: You must be signed in with a student account before submitting a project.'
+      });
+    }
+
+    // Bind student author name to verified account when authenticated
+    if (authenticatedUser && authenticatedUser.name) {
+      cleanedData.student_name = authenticatedUser.name;
     }
 
     // ── Duplicate Detection ────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
 import FeaturedProjects from './components/FeaturedProjects';
@@ -68,6 +68,16 @@ export default function App() {
     }
   });
   const [pendingCount, setPendingCount] = useState(0);
+  const [postLoginRedirect, setPostLoginRedirect] = useState(null);
+  const [authInitialMode, setAuthInitialMode] = useState('login');
+  const [authNotice, setAuthNotice] = useState('');
+
+  const handleRequireAuth = (mode = 'login', notice = 'Please sign in with your student account to submit a project.') => {
+    setPostLoginRedirect('submit');
+    setAuthInitialMode(mode);
+    setAuthNotice(notice);
+    navigateToTab('login');
+  };
 
   // Toast notification
   const [toast, setToast] = useState(null);

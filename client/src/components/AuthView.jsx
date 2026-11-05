@@ -9,9 +9,11 @@ export default function AuthView({
   onLoginSuccess, 
   onCancel, 
   showToast, 
-  defaultRole = 'all' 
+  defaultRole = 'all',
+  initialMode = 'login',
+  noticeMessage = null
 }) {
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [mode, setMode] = useState(initialMode); // 'login' | 'register'
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -117,6 +119,13 @@ export default function AuthView({
               ? 'Access student project submissions, review pipeline, or faculty moderation portal.'
               : 'Create your student engineer profile to submit, track, and showcase projects.'}
           </p>
+
+          {noticeMessage && (
+            <div className="auth-notice-banner">
+              <Sparkles size={15} className="text-primary" />
+              <span>{noticeMessage}</span>
+            </div>
+          )}
 
           {/* Mode Switcher Tabs */}
           <div className="auth-tabs">

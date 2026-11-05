@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Send, Sparkles, CheckCircle2, AlertCircle, Globe, Tag, 
-  User, FileText, RotateCcw, Check, Eye, Edit3
+  User, FileText, RotateCcw, Check, Eye, Edit3, Lock, ArrowRight, ShieldCheck
 } from 'lucide-react';
 import { GithubIcon } from './Icons';
 import { submitProject } from '../api';
@@ -22,8 +22,8 @@ const PRESETS = [
       student_name: 'Tarun Mehra',
       description: 'An open-source telemetry dashboard for low-altitude quadcopters featuring 3D waypoint planning, battery voltage alerts, and automated return-to-home algorithms.',
       tags: ['React', 'Python', 'WebSockets', 'Machine Learning'],
-      github_url: 'https://github.com/tarunmehra/aerodrone-telemetry',
-      demo_url: 'https://aerodrone-flight.surge.sh'
+      github_url: 'https://github.com/topics/drone-telemetry',
+      demo_url: 'https://betaflight.com'
     }
   },
   {
@@ -34,8 +34,8 @@ const PRESETS = [
       student_name: 'Priya Sharma',
       description: 'A resilient service mesh control plane featuring eBPF traffic monitoring, zero-downtime canary deployments, and Prometheus metrics telemetry.',
       tags: ['Next.js', 'Docker', 'Go', 'Redis', 'PostgreSQL'],
-      github_url: 'https://github.com/priyasharma/cloudmesh-orchestrator',
-      demo_url: 'https://cloudmesh-platform.vercel.app'
+      github_url: 'https://github.com/topics/service-mesh',
+      demo_url: 'https://play.grafana.org'
     }
   },
   {
@@ -44,10 +44,10 @@ const PRESETS = [
     data: {
       title: 'HealthAI - Clinical Diagnostic Assistant',
       student_name: 'Aarav Patel',
-      description: 'A deep learning assistant for chest X-ray pathology classification with multi-label heatmap visualizations and HIPAA-compliant patient report generation.',
+      description: 'A deep learning assistant for chest X-ray pathology classification with multi-label heatmap visualizations and clinical triaging support.',
       tags: ['React', 'FastAPI', 'Python', 'Machine Learning'],
-      github_url: 'https://github.com/aaravpatel/healthai-diagnostics',
-      demo_url: 'https://healthai-clinical.demo.app'
+      github_url: 'https://github.com/topics/health-ai',
+      demo_url: 'https://huggingface.co/spaces/NihalGazi/AI-Doctor'
     }
   }
 ];
@@ -61,15 +61,22 @@ const INITIAL_FORM = {
   demo_url: ''
 };
 
-export default function SubmissionForm({ onSuccess, onCancel, showToast, currentUser, authToken }) {
+export default function SubmissionForm({ 
+  onSuccess, 
+  onCancel, 
+  showToast, 
+  currentUser, 
+  authToken,
+  onRequireAuth 
+}) {
   const [formData, setFormData] = useState(() => ({
     ...INITIAL_FORM,
     student_name: currentUser?.name || '',
     student_email: currentUser?.email || ''
   }));
 
-  React.useEffect(() => {
-    if (currentUser?.name && !formData.student_name) {
+  useEffect(() => {
+    if (currentUser?.name) {
       setFormData(prev => ({
         ...prev,
         student_name: currentUser.name,
@@ -77,21 +84,120 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
       }));
     }
   }, [currentUser]);
+
   const [customTagInput, setCustomTagInput] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedSuccess, setSubmittedSuccess] = useState(null);
-  const [duplicateError, setDuplicateError] = useState(null); // { field, message }
+  const [duplicateError, setDuplicateError] = useState(null);
   const [mobileTab, setMobileTab] = useState('form'); // 'form' | 'preview'
 
-  // Validation logic
+  // ──────────────────────────────────────────────────────────────────────────
+  // GATE: Unauthenticated visitors cannot submit projects.
+  // ──────────────────────────────────────────────────────────────────────────
+  if (!currentUser) {
+    return (
+      <div className="auth-gate-wrapper">
+        <div className="auth-gate-card glass-panel">
+          <div className="auth-gate-glow" />
+
+          <div className="auth-gate-badge">
+            <Lock size={15} className="text-primary" />
+            <span>Student Authentication Required</span>
+          </div>
+
+          <h2 className="auth-gate-title">
+            Sign In to <span className="gradient-text">Submit Your Project</span>
+          </h2>
+
+          <p className="auth-gate-description">
+            To ensure genuine authorship and prevent unauthorized submissions, 
+            only authenticated student developers can submit projects for review.
+          </p>
+
+          <div className="auth-gate-perks-grid">
+            <div className="gate-perk-card">
+              <div className="gate-perk-icon">🎓</div>
+              <div className="gate-perk-body">
+                <strong>Verified Authorship</strong>
+                <p>Your project is permanently linked to your student credentials.</p>
+              </div>
+            </div>
+            <div className="gate-perk-card">
+              <div className="gate-perk-icon">📈</div>
+              <div className="gate-perk-body">
+                <strong>Track Review Status</strong>
+                <p>Monitor pending, approved, or feedback updates in your dashboard.</p>
+              </div>
+            </div>
+            <div className="gate-perk-card">
+              <div className="gate-perk-icon">💬</div>
+              <div className="gate-perk-body">
+                <strong>Reviewer Feedback</strong>
+                <p>Receive moderator notes on your repository and live demo.</p>
+              </div>
+            </div>
+            <div className="gate-perk-card">
+              <div className="gate-perk-icon">🛡️</div>
+              <div className="gate-perk-body">
+                <strong>Duplicate Protection</strong>
+                <p>Guarantees no one else can submit duplicate copies of your project.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="auth-gate-actions">
+            <button 
+              type="button"
+              id="gate-signin-btn"
+              className="btn-primary auth-gate-primary-btn"
+              onClick={() => onRequireAuth ? onRequireAuth('login') : null}
+            >
+              <User size={16} />
+              <span>Sign In with Student Account</span>
+              <ArrowRight size={15} />
+            </button>
+
+            <button 
+              type="button"
+              id="gate-register-btn"
+              className="btn-secondary auth-gate-secondary-btn"
+              onClick={() => onRequireAuth ? onRequireAuth('register') : null}
+            >
+              <Sparkles size={16} />
+              <span>Register as New Student</span>
+            </button>
+
+            <button 
+              type="button"
+              className="auth-gate-back-btn"
+              onClick={onCancel}
+            >
+              <span>Explore Showcase Gallery Instead</span>
+            </button>
+          </div>
+
+          <div className="auth-gate-demo-box">
+            <span className="demo-label">Quick Student Demo:</span>
+            <code>student@codenova.edu</code>
+            <span className="demo-sep">/</span>
+            <code>Student@123</code>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // VALIDATION LOGIC
+  // ──────────────────────────────────────────────────────────────────────────
   const validateField = (name, value) => {
     let err = '';
     if (name === 'title') {
       if (!value.trim()) err = 'Project title is required.';
       else if (value.trim().length < 3) err = 'Title must be at least 3 characters.';
     } else if (name === 'student_name') {
-      if (!value.trim()) err = 'Student name is required.';
+      if (!value.trim()) err = 'Student author name is required.';
       else if (value.trim().length < 2) err = 'Student name must be at least 2 characters.';
     } else if (name === 'description') {
       if (!value.trim()) err = 'Project description is required.';
@@ -176,14 +282,24 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
   };
 
   const handleApplyPreset = (preset) => {
-    setFormData(preset.data);
+    setFormData({
+      ...preset.data,
+      student_name: currentUser?.name || preset.data.student_name,
+      student_email: currentUser?.email || ''
+    });
     setErrors({});
-    showToast(`Loaded sample project: "${preset.data.title}"`, 'info');
+    setDuplicateError(null);
+    showToast(`Loaded sample preset: "${preset.data.title}"`, 'info');
   };
 
   const handleReset = () => {
-    setFormData(INITIAL_FORM);
+    setFormData({
+      ...INITIAL_FORM,
+      student_name: currentUser?.name || '',
+      student_email: currentUser?.email || ''
+    });
     setErrors({});
+    setDuplicateError(null);
   };
 
   // Checklist verification calculations
@@ -208,7 +324,7 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
 
     const newErrors = {};
     Object.keys(formData).forEach(key => {
-      if (key !== 'tags') {
+      if (key !== 'tags' && key !== 'student_email') {
         const err = validateField(key, formData[key]);
         if (err) newErrors[key] = err;
       }
@@ -235,7 +351,6 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
       // Handle duplicate submission (HTTP 409)
       if (err.duplicate) {
         setDuplicateError({ field: err.field, message: err.message });
-        // Highlight the duplicate field inline
         if (err.field) {
           setErrors(prev => ({ ...prev, [err.field]: err.message }));
         }
@@ -252,7 +367,7 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
   const previewProject = {
     id: 'preview-draft',
     title: formData.title.trim() || 'Your Innovative Project Title',
-    student_name: formData.student_name.trim() || 'Student Developer',
+    student_name: formData.student_name.trim() || currentUser?.name || 'Student Developer',
     description: formData.description.trim() || 'Your project architecture overview will be previewed here in real-time as you type in the submission form.',
     tags: formData.tags.length > 0 ? formData.tags : ['React', 'Node.js'],
     github_url: formData.github_url || 'https://github.com',
@@ -280,6 +395,7 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
             <strong>Moderation Review Queue</strong>
             <p>
               An administrator will review your repository and verify your live demo before publishing it to the public showcase gallery.
+              You can track this submission in your <strong>My Submissions</strong> dashboard.
             </p>
           </div>
         </div>
@@ -290,7 +406,11 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
             className="btn-primary" 
             onClick={() => {
               setSubmittedSuccess(null);
-              setFormData(INITIAL_FORM);
+              setFormData({
+                ...INITIAL_FORM,
+                student_name: currentUser?.name || '',
+                student_email: currentUser?.email || ''
+              });
               setErrors({});
             }}
           >
@@ -311,37 +431,83 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
   return (
     <div className="submission-container">
       {/* Form Page Header */}
-      <div className="submission-header glass-panel">
-        <div>
-          <div className="hero-badge-pill" style={{ margin: '0 0 10px 0' }}>
-            <Sparkles size={13} />
-            <span>Interactive Project Submission</span>
+      <div className="submission-header-v2">
+        <div className="sfh-copy">
+          <div className="sfh-badge">
+            <Sparkles size={12} />
+            <span>Student Submission Portal</span>
           </div>
-          <h1 className="submission-title">Submit Your Project Showcase</h1>
-          <p className="submission-subtitle">
-            Fill out the details below. Our reactive card preview updates live as you type.
+          <h1 className="sfh-title">Submit Your Project</h1>
+          <p className="sfh-sub">
+            Share your engineering work with the community. Every submission
+            is verified by a moderator before receiving public showcase honors.
           </p>
+
+          {/* 3-step mini process */}
+          <div className="sfh-steps">
+            <div className="sfh-step">
+              <div className="sfh-step-num">1</div>
+              <div className="sfh-step-text">
+                <strong>Fill details</strong>
+                <span>Title, description &amp; links</span>
+              </div>
+            </div>
+            <div className="sfh-step-arrow">→</div>
+            <div className="sfh-step">
+              <div className="sfh-step-num">2</div>
+              <div className="sfh-step-text">
+                <strong>Admin reviews</strong>
+                <span>Quality &amp; safety check</span>
+              </div>
+            </div>
+            <div className="sfh-step-arrow">→</div>
+            <div className="sfh-step">
+              <div className="sfh-step-num">3</div>
+              <div className="sfh-step-text">
+                <strong>Goes live</strong>
+                <span>Published in gallery</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Quick Sample Presets Bar */}
-        <div className="sample-presets-bar">
-          <span className="presets-label">
-            <Sparkles size={14} className="text-amber" />
-            <span>Fill Sample Data:</span>
-          </span>
-          <div className="presets-buttons">
-            {PRESETS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className="preset-btn"
-                onClick={() => handleApplyPreset(p)}
-                title={`Autofill ${p.label}`}
-              >
-                {p.label}
-              </button>
-            ))}
+        {/* Right side: Authenticated student session badge */}
+        <div className="sfh-auth-user-card">
+          <div className="sauc-avatar">
+            {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'S'}
           </div>
+          <div className="sauc-info">
+            <div className="sauc-badge">
+              <ShieldCheck size={12} className="text-emerald" />
+              <span>Verified Student Session</span>
+            </div>
+            <strong className="sauc-name">{currentUser.name}</strong>
+            <span className="sauc-email">{currentUser.email}</span>
+          </div>
+          <div className="sauc-notice">
+            <span>Submissions will appear in your <strong>My Submissions</strong> dashboard.</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Sample Presets Bar */}
+      <div className="presets-bar-v2 glass-panel">
+        <span className="presets-label">
+          <Sparkles size={14} className="text-amber" />
+          <span>Need inspiration? Quick-fill sample data:</span>
+        </span>
+        <div className="presets-buttons-wrap">
+          {PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className="preset-btn-pill"
+              onClick={() => handleApplyPreset(p)}
+              title={`Autofill ${p.label}`}
+            >
+              {p.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -404,168 +570,221 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
           )}
 
           <form onSubmit={handleSubmit} noValidate>
-            {/* Project Title */}
-            <div className="form-group">
-              <div className="form-label-row">
-                <label htmlFor="title" className="form-label">
-                  <FileText size={15} />
-                  <span>Project Title <span className="req-star">*</span></span>
-                </label>
-                <span className="char-count">{formData.title.length} chars</span>
-              </div>
-              <input
-                id="title"
-                name="title"
-                type="text"
-                placeholder="e.g. AeroDrone - Autonomous Flight Telemetry"
-                value={formData.title}
-                onChange={handleChange}
-                className={`form-input ${errors.title ? 'input-error' : ''}`}
-                maxLength={100}
-              />
-              {errors.title && <span className="error-text"><AlertCircle size={13} /> {errors.title}</span>}
-            </div>
-
-            {/* Student Author */}
-            <div className="form-group">
-              <label htmlFor="student_name" className="form-label">
-                <User size={15} />
-                <span>Student / Author Name <span className="req-star">*</span></span>
-              </label>
-              <input
-                id="student_name"
-                name="student_name"
-                type="text"
-                placeholder="e.g. Tarun Mehra"
-                value={formData.student_name}
-                onChange={handleChange}
-                className={`form-input ${errors.student_name ? 'input-error' : ''}`}
-                maxLength={60}
-              />
-              {errors.student_name && <span className="error-text"><AlertCircle size={13} /> {errors.student_name}</span>}
-            </div>
-
-            {/* Description */}
-            <div className="form-group">
-              <div className="form-label-row">
-                <label htmlFor="description" className="form-label">
-                  <FileText size={15} />
-                  <span>Project Description & Architecture <span className="req-star">*</span></span>
-                </label>
-                <span className={`char-count ${formData.description.length < 15 ? 'char-count-warning' : 'char-count-ok'}`}>
-                  {formData.description.length} / 15 min chars
-                </span>
-              </div>
-              <textarea
-                id="description"
-                name="description"
-                rows={4}
-                placeholder="Explain the problem your project solves, key features, and engineering architecture..."
-                value={formData.description}
-                onChange={handleChange}
-                className={`form-textarea ${errors.description ? 'input-error' : ''}`}
-              />
-              {errors.description && <span className="error-text"><AlertCircle size={13} /> {errors.description}</span>}
-            </div>
-
-            {/* Technology Tags */}
-            <div className="form-group">
-              <label className="form-label">
-                <Tag size={15} />
-                <span>Technology Stack Tags (Select up to 8) <span className="req-star">*</span></span>
-              </label>
-
-              {/* Active Selected Tags */}
-              <div className="selected-tags-chips">
-                {formData.tags.map(tag => (
-                  <span key={tag} className="tag-chip active-chip">
-                    #{tag}
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveTag(tag)}
-                      className="chip-remove-btn"
-                      aria-label={`Remove tag ${tag}`}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
+            {/* ── STEP 1: Project Identity ───────────────────────────────── */}
+            <div className="form-section">
+              <div className="form-section-header">
+                <div className="form-section-num">1</div>
+                <div>
+                  <span className="form-section-title">Project Identity</span>
+                  <span className="form-section-hint">What is your project called and who built it?</span>
+                </div>
               </div>
 
-              {/* Popular Tag Picker Chips */}
-              <div className="popular-tags-row">
-                {POPULAR_TAGS.map(tag => {
-                  const isSelected = formData.tags.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      type="button"
-                      className={`tag-picker-btn ${isSelected ? 'tag-picked' : ''}`}
-                      onClick={() => handleToggleTag(tag)}
-                    >
-                      {isSelected ? '✓ ' : '+ '}#{tag}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Custom Tag Input */}
-              <div className="custom-tag-row">
+              <div className="form-group">
+                <div className="form-label-row">
+                  <label htmlFor="title" className="form-label">
+                    <FileText size={15} />
+                    <span>Project Title <span className="req-star">*</span></span>
+                  </label>
+                  <span className="char-count">{formData.title.length}/100</span>
+                </div>
                 <input
+                  id="title"
+                  name="title"
                   type="text"
-                  placeholder="Add custom technology tag..."
-                  value={customTagInput}
-                  onChange={(e) => setCustomTagInput(e.target.value)}
-                  onKeyDown={handleAddCustomTag}
-                  className="custom-tag-input"
-                  maxLength={25}
+                  placeholder="e.g. AeroDrone - Autonomous Flight Telemetry"
+                  value={formData.title}
+                  onChange={handleChange}
+                  className={`form-input ${errors.title ? 'input-error' : ''}`}
+                  maxLength={100}
                 />
-                <button
-                  type="button"
-                  onClick={handleAddCustomTag}
-                  className="btn-add-tag"
-                  disabled={!customTagInput.trim()}
-                >
-                  Add Tag
-                </button>
+                <span className="field-hint">Give it a clear, descriptive name that shows what it does.</span>
+                {errors.title && <span className="error-text"><AlertCircle size={13} /> {errors.title}</span>}
               </div>
-              {errors.tags && <span className="error-text"><AlertCircle size={13} /> {errors.tags}</span>}
+
+              <div className="form-group">
+                <label htmlFor="student_name" className="form-label">
+                  <User size={15} />
+                  <span>Student Author <span className="req-star">*</span></span>
+                </label>
+                <div className="input-locked-wrapper">
+                  <input
+                    id="student_name"
+                    name="student_name"
+                    type="text"
+                    value={formData.student_name}
+                    readOnly
+                    className="form-input input-locked"
+                  />
+                  <div className="locked-pill">
+                    <Lock size={12} />
+                    <span>Verified Account</span>
+                  </div>
+                </div>
+                <span className="field-hint text-emerald">
+                  ✓ Automatically linked to your verified student account ({currentUser.email}).
+                </span>
+                {errors.student_name && <span className="error-text"><AlertCircle size={13} /> {errors.student_name}</span>}
+              </div>
             </div>
 
-            {/* GitHub URL */}
-            <div className="form-group">
-              <label htmlFor="github_url" className="form-label">
-                <GithubIcon size={15} />
-                <span>GitHub Repository URL <span className="req-star">*</span></span>
-              </label>
-              <input
-                id="github_url"
-                name="github_url"
-                type="url"
-                placeholder="https://github.com/username/repository"
-                value={formData.github_url}
-                onChange={handleChange}
-                className={`form-input ${errors.github_url ? 'input-error' : ''}`}
-              />
-              {errors.github_url && <span className="error-text"><AlertCircle size={13} /> {errors.github_url}</span>}
+            {/* ── STEP 2: Project Description ────────────────────────────── */}
+            <div className="form-section">
+              <div className="form-section-header">
+                <div className="form-section-num">2</div>
+                <div>
+                  <span className="form-section-title">What does it do?</span>
+                  <span className="form-section-hint">Help viewers understand your project at a glance.</span>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <div className="form-label-row">
+                  <label htmlFor="description" className="form-label">
+                    <FileText size={15} />
+                    <span>Project Description <span className="req-star">*</span></span>
+                  </label>
+                  <span className={`char-count ${formData.description.length < 15 ? 'char-count-warning' : 'char-count-ok'}`}>
+                    {formData.description.length} chars {formData.description.length < 15 ? '(min 15)' : '✓'}
+                  </span>
+                </div>
+                <textarea
+                  id="description"
+                  name="description"
+                  rows={4}
+                  placeholder="What problem does it solve? What are the key features? How is it built? (e.g. React frontend + Python FastAPI backend with ML model…)"
+                  value={formData.description}
+                  onChange={handleChange}
+                  className={`form-textarea ${errors.description ? 'input-error' : ''}`}
+                />
+                <span className="field-hint">Write at least 15 characters. More detail = higher chance of approval.</span>
+                {errors.description && <span className="error-text"><AlertCircle size={13} /> {errors.description}</span>}
+              </div>
             </div>
 
-            {/* Live Demo URL */}
-            <div className="form-group">
-              <label htmlFor="demo_url" className="form-label">
-                <Globe size={15} />
-                <span>Live Demonstration URL <span className="req-star">*</span></span>
-              </label>
-              <input
-                id="demo_url"
-                name="demo_url"
-                type="url"
-                placeholder="https://my-project-demo.vercel.app"
-                value={formData.demo_url}
-                onChange={handleChange}
-                className={`form-input ${errors.demo_url ? 'input-error' : ''}`}
-              />
-              {errors.demo_url && <span className="error-text"><AlertCircle size={13} /> {errors.demo_url}</span>}
+            {/* ── STEP 3: Tech Stack Tags ────────────────────────────────── */}
+            <div className="form-section">
+              <div className="form-section-header">
+                <div className="form-section-num">3</div>
+                <div>
+                  <span className="form-section-title">Technologies Used</span>
+                  <span className="form-section-hint">Pick up to 8 tags so students can find your project by stack.</span>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  <Tag size={15} />
+                  <span>Tech Stack Tags <span className="req-star">*</span>
+                    <span className="tag-count-badge">{formData.tags.length}/8 selected</span>
+                  </span>
+                </label>
+
+                {/* Active Selected Tags */}
+                {formData.tags.length > 0 && (
+                  <div className="selected-tags-chips">
+                    {formData.tags.map(tag => (
+                      <span key={tag} className="tag-chip active-chip">
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="chip-remove-btn"
+                          aria-label={`Remove tag ${tag}`}
+                        >×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <span className="field-hint">Click to add, click again to remove. Or add a custom tag below.</span>
+
+                {/* Popular Tag Picker */}
+                <div className="popular-tags-row">
+                  {POPULAR_TAGS.map(tag => {
+                    const isSelected = formData.tags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        className={`tag-picker-btn ${isSelected ? 'tag-picked' : ''}`}
+                        onClick={() => handleToggleTag(tag)}
+                      >
+                        {isSelected ? '✓ ' : '+ '}#{tag}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Tag Input */}
+                <div className="custom-tag-row">
+                  <input
+                    type="text"
+                    placeholder="Custom tag (e.g. TensorFlow, Arduino…)"
+                    value={customTagInput}
+                    onChange={(e) => setCustomTagInput(e.target.value)}
+                    onKeyDown={handleAddCustomTag}
+                    className="custom-tag-input"
+                    maxLength={25}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomTag}
+                    className="btn-add-tag"
+                    disabled={!customTagInput.trim()}
+                  >
+                    + Add
+                  </button>
+                </div>
+                {errors.tags && <span className="error-text"><AlertCircle size={13} /> {errors.tags}</span>}
+              </div>
+            </div>
+
+            {/* ── STEP 4: Links ──────────────────────────────────────────── */}
+            <div className="form-section">
+              <div className="form-section-header">
+                <div className="form-section-num">4</div>
+                <div>
+                  <span className="form-section-title">Project Links</span>
+                  <span className="form-section-hint">Both links are required — reviewers verify them before approval.</span>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="github_url" className="form-label">
+                  <GithubIcon size={15} />
+                  <span>GitHub Repository URL <span className="req-star">*</span></span>
+                </label>
+                <input
+                  id="github_url"
+                  name="github_url"
+                  type="url"
+                  placeholder="https://github.com/your-username/your-repo"
+                  value={formData.github_url}
+                  onChange={handleChange}
+                  className={`form-input ${errors.github_url ? 'input-error' : ''}`}
+                />
+                <span className="field-hint">Must be a public repository on github.com — no private repositories.</span>
+                {errors.github_url && <span className="error-text"><AlertCircle size={13} /> {errors.github_url}</span>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="demo_url" className="form-label">
+                  <Globe size={15} />
+                  <span>Live Demo URL <span className="req-star">*</span></span>
+                </label>
+                <input
+                  id="demo_url"
+                  name="demo_url"
+                  type="url"
+                  placeholder="https://your-project.vercel.app"
+                  value={formData.demo_url}
+                  onChange={handleChange}
+                  className={`form-input ${errors.demo_url ? 'input-error' : ''}`}
+                />
+                <span className="field-hint">A deployed URL where reviewers can interact with the live project.</span>
+                {errors.demo_url && <span className="error-text"><AlertCircle size={13} /> {errors.demo_url}</span>}
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -631,7 +850,7 @@ export default function SubmissionForm({ onSuccess, onCancel, showToast, current
 
                 <div className={`checklist-item ${checkName ? 'item-pass' : 'item-pending'}`}>
                   {checkName ? <Check size={14} className="text-emerald" /> : <div className="dot-pending" />}
-                  <span>Student Name provided</span>
+                  <span>Student Author verified ({currentUser.name})</span>
                 </div>
 
                 <div className={`checklist-item ${checkDesc ? 'item-pass' : 'item-pending'}`}>
