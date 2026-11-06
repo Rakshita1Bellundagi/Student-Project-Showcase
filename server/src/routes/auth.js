@@ -19,7 +19,17 @@ router.post('/login', (req, res) => {
       });
     }
 
-    const user = db.prepare('SELECT id, email, password_hash, name, role FROM users WHERE LOWER(email) = ?').get(email.trim().toLowerCase());
+    const cleanEmail = email.trim().toLowerCase();
+    // Allow interchangeable domain alias for demo users: @showcase.edu and @codenova.edu
+    const aliasEmail = cleanEmail.endsWith('@showcase.edu') 
+      ? cleanEmail.replace('@showcase.edu', '@codenova.edu')
+      : cleanEmail.endsWith('@codenova.edu')
+        ? cleanEmail.replace('@codenova.edu', '@showcase.edu')
+        : cleanEmail;
+
+    const user = db.prepare(
+      'SELECT id, email, password_hash, name, role FROM users WHERE LOWER(email) = ? OR LOWER(email) = ?'
+    ).get(cleanEmail, aliasEmail);
 
     if (!user) {
       return res.status(401).json({

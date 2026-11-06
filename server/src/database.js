@@ -70,6 +70,32 @@ function initializeDatabase() {
     console.log('[Database] Default student user initialized: student@codenova.edu / Student@123');
   }
 
+  // Seed showcase admin alias if not exists
+  const showcaseAdminCheck = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@showcase.edu');
+  if (!showcaseAdminCheck) {
+    const salt = bcrypt.genSaltSync(10);
+    const passwordHash = bcrypt.hashSync('Admin@123', salt);
+    const adminId = 'usr_admin_showcase_' + Date.now();
+    db.prepare(`
+      INSERT INTO users (id, email, password_hash, name, role, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(adminId, 'admin@showcase.edu', passwordHash, 'Lead Moderator', 'admin', new Date().toISOString());
+    console.log('[Database] Default showcase admin initialized: admin@showcase.edu / Admin@123');
+  }
+
+  // Seed showcase student alias if not exists
+  const showcaseStudentCheck = db.prepare('SELECT id FROM users WHERE email = ?').get('student@showcase.edu');
+  if (!showcaseStudentCheck) {
+    const salt = bcrypt.genSaltSync(10);
+    const passwordHash = bcrypt.hashSync('Student@123', salt);
+    const studentId = 'usr_student_showcase_' + Date.now();
+    db.prepare(`
+      INSERT INTO users (id, email, password_hash, name, role, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(studentId, 'student@showcase.edu', passwordHash, 'Aarav Sharma', 'student', new Date().toISOString());
+    console.log('[Database] Default showcase student initialized: student@showcase.edu / Student@123');
+  }
+
   // Add optional student_email column if not already present
   try {
     db.exec('ALTER TABLE projects ADD COLUMN student_email TEXT;');
