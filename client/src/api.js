@@ -2,7 +2,7 @@
  * API client for Student Project Showcase Portal
  */
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 export async function fetchPublicProjects({ search = '', tag = '', sort = 'newest' } = {}) {
   const params = new URLSearchParams();
