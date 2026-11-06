@@ -56,10 +56,28 @@ app.use('/api/admin', adminRouter);
 app.use('/api/auth', authRouter);
 
 // 404 handler for API routes
+// 404 handler for unknown API routes
 app.use('/api/*', (req, res) => {
   res.status(404).json({
     success: false,
     message: `API endpoint ${req.method} ${req.originalUrl} not found.`
+  });
+});
+
+// Serve frontend static build in production
+const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
+app.use(express.static(clientDistPath));
+
+// SPA Client Routing: fallback to index.html for non-API routes
+app.get('*', (req, res, next) => {
+  if (req.originalUrl.startsWith('/api')) {
+    return next();
+  }
+  const indexPath = path.join(clientDistPath, 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      res.status(200).send('API service is active. Run "npm run build" to compile frontend assets.');
+    }
   });
 });
 

@@ -1,12 +1,13 @@
 {
   "name": "student-project-showcase-portal",
   "version": "1.0.0",
-  "description": "Student Project Showcase Portal — CodeNova Batch 01 Internship Task 4",
+  "description": "Student Project Showcase Portal",
   "scripts": {
+    "start": "node server/src/server.js",
     "server": "node server/src/server.js",
     "client": "npm --prefix client run dev",
     "dev": "node -e \"const { spawn } = require('child_process'); const s = spawn('node', ['server/src/server.js'], { stdio: 'inherit', shell: true }); const c = spawn('npm', ['--prefix', 'client', 'run', 'dev'], { stdio: 'inherit', shell: true }); process.on('SIGINT', () => { s.kill(); c.kill(); process.exit(); });\"",
-    "build": "npm --prefix client run build",
+    "build": "npm --prefix server install && npm --prefix client install && npm --prefix client run build",
     "test": "node server/test/api.test.js",
     "db:view": "node server/view-db.js"
   },
@@ -14,9 +15,8 @@
     "student-showcase",
     "react",
     "express",
-    "codenova",
     "portfolio"
   ],
-  "author": "CodeNova Batch 01",
+  "author": "Student Showcase Team",
   "license": "MIT"
 }

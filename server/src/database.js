@@ -281,6 +281,19 @@ function seedProjects() {
       admin_notes: 'Rich monitoring UI with comprehensive Apache metrics support.',
       created_at: new Date(Date.now() - 6 * 3600000).toISOString(),
       updated_at: new Date(Date.now() - 6 * 3600000).toISOString()
+    },
+    {
+      id: 'proj_t9jnktw_1792394322176',
+      title: 'Medical Store Billing System',
+      student_name: 'Rakshita Bellundagi',
+      description: 'It is an user friendly Medical Billing sytem which is reduces the admin manual work',
+      tags: ['Python', 'React', 'Node.js'],
+      github_url: 'https://github.com/Rakshita1Bellundagi/Samruddi-Med-Pro.git',
+      demo_url: 'https://samruddi-med-pro.vercel.app',
+      status: 'approved',
+      admin_notes: 'Approved by administrator for public showcase.',
+      created_at: '2026-10-19T07:18:42.176Z',
+      updated_at: '2026-10-19T07:19:33.700Z'
     }
   ];
 
