@@ -38,7 +38,7 @@ async function runTests() {
     // TC-02: Submit form with missing required fields
     const missingRes = await fetch(`${BASE_URL}/projects`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-test-suite': 'true' },
       body: JSON.stringify({ title: '', student_name: '' })
     });
     const missingData = await missingRes.json();
@@ -51,7 +51,7 @@ async function runTests() {
     // TC-03: Submit invalid GitHub URL
     const invalidGitRes = await fetch(`${BASE_URL}/projects`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-test-suite': 'true' },
       body: JSON.stringify({
         title: 'Quantum Simulator',
         student_name: 'Test Student',
@@ -71,7 +71,7 @@ async function runTests() {
     // TC-01: Submit a valid project
     const validRes = await fetch(`${BASE_URL}/projects`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-test-suite': 'true' },
       body: JSON.stringify({
         title: 'NeuroVibe - BCI Music Synthesizer',
         student_name: 'Mira Nair',

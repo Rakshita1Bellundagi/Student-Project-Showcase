@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
 import FeaturedProjects from './components/FeaturedProjects';
@@ -335,7 +335,12 @@ export default function App() {
         favoritesCount={favorites.length}
         currentUser={currentUser}
         onLogout={handleLogout}
-        onOpenAuth={() => navigateToTab('login')}
+        onOpenAuth={() => {
+          setPostLoginRedirect(null);
+          setAuthInitialMode('login');
+          setAuthNotice('');
+          navigateToTab('login');
+        }}
       />
 
       <main className="main-content">
@@ -451,6 +456,7 @@ export default function App() {
               showToast={showToast}
               currentUser={currentUser}
               authToken={authToken}
+              onRequireAuth={handleRequireAuth}
             />
           </div>
         )}
@@ -505,8 +511,14 @@ export default function App() {
           <div className="auth-view-page">
             <AuthView 
               onLoginSuccess={handleLoginSuccess}
-              onCancel={() => navigateToTab('home')}
+              onCancel={() => {
+                setPostLoginRedirect(null);
+                setAuthNotice('');
+                navigateToTab('home');
+              }}
               showToast={showToast}
+              initialMode={authInitialMode}
+              noticeMessage={authNotice}
             />
           </div>
         )}

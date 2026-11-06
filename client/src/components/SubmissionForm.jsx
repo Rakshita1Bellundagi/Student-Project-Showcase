@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Send, Sparkles, CheckCircle2, AlertCircle, Globe, Tag, 
+import {
+  Send, Sparkles, CheckCircle2, AlertCircle, Globe, Tag,
   User, FileText, RotateCcw, Check, Eye, Edit3, Lock, ArrowRight, ShieldCheck
 } from 'lucide-react';
 import { GithubIcon } from './Icons';
@@ -8,8 +8,8 @@ import { submitProject } from '../api';
 import ProjectCard from './ProjectCard';
 
 const POPULAR_TAGS = [
-  'React', 'Next.js', 'Node.js', 'Python', 'MongoDB', 
-  'SQLite', 'MySQL', 'PostgreSQL', 'Docker', 'Machine Learning', 
+  'React', 'Next.js', 'Node.js', 'Python', 'MongoDB',
+  'SQLite', 'MySQL', 'PostgreSQL', 'Docker', 'Machine Learning',
   'FastAPI', 'Tailwind', 'WebSockets', 'GraphQL', 'Redis', 'TypeScript'
 ];
 
@@ -61,13 +61,13 @@ const INITIAL_FORM = {
   demo_url: ''
 };
 
-export default function SubmissionForm({ 
-  onSuccess, 
-  onCancel, 
-  showToast, 
-  currentUser, 
+export default function SubmissionForm({
+  onSuccess,
+  onCancel,
+  showToast,
+  currentUser,
   authToken,
-  onRequireAuth 
+  onRequireAuth
 }) {
   const [formData, setFormData] = useState(() => ({
     ...INITIAL_FORM,
@@ -111,7 +111,7 @@ export default function SubmissionForm({
           </h2>
 
           <p className="auth-gate-description">
-            To ensure genuine authorship and prevent unauthorized submissions, 
+            To ensure genuine authorship and prevent unauthorized submissions,
             only authenticated student developers can submit projects for review.
           </p>
 
@@ -147,38 +147,61 @@ export default function SubmissionForm({
           </div>
 
           <div className="auth-gate-actions">
-            <button 
+            <button
               type="button"
               id="gate-signin-btn"
               className="btn-primary auth-gate-primary-btn"
-              onClick={() => onRequireAuth ? onRequireAuth('login') : null}
+              onClick={() => {
+                if (onRequireAuth) {
+                  onRequireAuth('login');
+                } else {
+                  window.location.hash = '#/login';
+                }
+              }}
             >
               <User size={16} />
               <span>Sign In with Student Account</span>
               <ArrowRight size={15} />
             </button>
 
-            <button 
+            <button
               type="button"
               id="gate-register-btn"
               className="btn-secondary auth-gate-secondary-btn"
-              onClick={() => onRequireAuth ? onRequireAuth('register') : null}
+              onClick={() => {
+                if (onRequireAuth) {
+                  onRequireAuth('register');
+                } else {
+                  window.location.hash = '#/login';
+                }
+              }}
             >
               <Sparkles size={16} />
               <span>Register as New Student</span>
             </button>
 
-            <button 
+            <button
               type="button"
               className="auth-gate-back-btn"
-              onClick={onCancel}
+              onClick={onCancel || (() => { window.location.hash = '#/gallery'; })}
             >
               <span>Explore Showcase Gallery Instead</span>
             </button>
           </div>
 
-          <div className="auth-gate-demo-box">
-            <span className="demo-label">Quick Student Demo:</span>
+          <div
+            className="auth-gate-demo-box"
+            style={{ cursor: 'pointer' }}
+            title="Click to sign in with demo student account"
+            onClick={() => {
+              if (onRequireAuth) {
+                onRequireAuth('login');
+              } else {
+                window.location.hash = '#/login';
+              }
+            }}
+          >
+            <span className="demo-label">Quick Student Demo (Click to Sign In):</span>
             <code>student@codenova.edu</code>
             <span className="demo-sep">/</span>
             <code>Student@123</code>
@@ -401,9 +424,9 @@ export default function SubmissionForm({
         </div>
 
         <div className="success-actions">
-          <button 
+          <button
             id="btn-submit-another"
-            className="btn-primary" 
+            className="btn-primary"
             onClick={() => {
               setSubmittedSuccess(null);
               setFormData({
@@ -416,9 +439,9 @@ export default function SubmissionForm({
           >
             <span>Submit Another Project</span>
           </button>
-          <button 
+          <button
             id="btn-return-gallery"
-            className="btn-secondary" 
+            className="btn-secondary"
             onClick={onCancel}
           >
             <span>Return to Gallery</span>
@@ -513,14 +536,14 @@ export default function SubmissionForm({
 
       {/* Mobile Tab Switcher */}
       <div className="form-preview-mobile-tabs mobile-only">
-        <button 
+        <button
           className={`mobile-tab-btn ${mobileTab === 'form' ? 'active' : ''}`}
           onClick={() => setMobileTab('form')}
         >
           <Edit3 size={15} />
           <span>Editor Form</span>
         </button>
-        <button 
+        <button
           className={`mobile-tab-btn ${mobileTab === 'preview' ? 'active' : ''}`}
           onClick={() => setMobileTab('preview')}
         >
@@ -542,12 +565,12 @@ export default function SubmissionForm({
               </span>
             </div>
             <div className="progress-track">
-              <div 
-                className="progress-bar-fill" 
-                style={{ 
+              <div
+                className="progress-bar-fill"
+                style={{
                   width: `${progressPercent}%`,
                   background: `linear-gradient(90deg, #6366f1, ${getProgressColor()})`
-                }} 
+                }}
               />
             </div>
           </div>
@@ -682,6 +705,7 @@ export default function SubmissionForm({
 
                 {/* Active Selected Tags */}
                 {formData.tags.length > 0 && (
+
                   <div className="selected-tags-chips">
                     {formData.tags.map(tag => (
                       <span key={tag} className="tag-chip active-chip">
@@ -829,9 +853,9 @@ export default function SubmissionForm({
             </div>
 
             <div className="preview-card-wrap">
-              <ProjectCard 
-                project={previewProject} 
-                onSelectProject={() => {}} 
+              <ProjectCard
+                project={previewProject}
+                onSelectProject={() => { }}
               />
             </div>
 

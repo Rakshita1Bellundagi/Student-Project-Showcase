@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Mail, Lock, User, ArrowRight, Shield, Sparkles, 
   Eye, EyeOff, CheckCircle2, AlertCircle, Compass 
@@ -16,6 +16,13 @@ export default function AuthView({
   const [mode, setMode] = useState(initialMode); // 'login' | 'register'
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (initialMode) {
+      setMode(initialMode);
+      setErrorMsg('');
+    }
+  }, [initialMode]);
 
   // Form states
   const [email, setEmail] = useState('');
