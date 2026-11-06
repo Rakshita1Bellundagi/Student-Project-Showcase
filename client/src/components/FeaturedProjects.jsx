@@ -11,8 +11,15 @@ export default function FeaturedProjects({
   onToggleFavorite,
   onExploreAll
 }) {
-  // Grab top 3 projects for the spotlight
-  const featured = projects.slice(0, 3);
+  // Ensure Rakshita's Medical Store Billing System is featured first
+  const rakshitaProject = projects.find(p => 
+    (p.student_name && p.student_name.toLowerCase().includes('rakshita')) ||
+    (p.title && p.title.toLowerCase().includes('medical store'))
+  );
+  const otherProjects = projects.filter(p => p.id !== rakshitaProject?.id);
+  const featured = rakshitaProject 
+    ? [rakshitaProject, ...otherProjects.slice(0, 2)] 
+    : projects.slice(0, 3);
 
   if (featured.length === 0) return null;
 

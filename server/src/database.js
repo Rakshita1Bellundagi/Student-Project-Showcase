@@ -292,7 +292,7 @@ function seedProjects() {
       demo_url: 'https://samruddi-med-pro.vercel.app',
       status: 'approved',
       admin_notes: 'Approved by administrator for public showcase.',
-      created_at: '2026-10-19T07:18:42.176Z',
+      created_at: new Date(Date.now() - 1 * 3600000).toISOString(),
       updated_at: '2026-10-19T07:19:33.700Z'
     }
   ];

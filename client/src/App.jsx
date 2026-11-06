@@ -355,7 +355,12 @@ export default function App() {
               tagCount={tags.length}
               onSelectTag={handleTagClick}
               onQuickSearch={handleQuickSearch}
-              featuredProject={projects[0]}
+              featuredProject={
+                projects.find(p => 
+                  (p.student_name && p.student_name.toLowerCase().includes('rakshita')) ||
+                  (p.title && p.title.toLowerCase().includes('medical store'))
+                ) || projects[0]
+              }
               onSelectProject={(p) => setSelectedProject(p)}
             />
 

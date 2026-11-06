@@ -34,13 +34,13 @@ export default function HeroSection({
 
   // Fallback spotlight data if no project loaded yet
   const spotlight = featuredProject || {
-    id: 'proj_healthai_01',
-    title: 'HealthAI - Predictive Diagnostic Assistant',
-    student_name: 'Aarav Sharma',
-    description: 'AI-powered clinical risk assessment web app triaging patient vitals with deep learning classifiers.',
-    tags: ['React', 'Python', 'Machine Learning', 'FastAPI'],
-    github_url: 'https://github.com/aaravsharma/healthai-diagnostic',
-    demo_url: 'https://healthai-demo.vercel.app'
+    id: 'proj_t9jnktw_1792394322176',
+    title: 'Medical Store Billing System',
+    student_name: 'Rakshita Bellundagi',
+    description: 'An intuitive full-stack medical store billing and inventory management platform that reduces manual administrative overhead with fast POS invoicing, stock tracking, and automated summaries.',
+    tags: ['Python', 'React', 'Node.js', 'Express'],
+    github_url: 'https://github.com/Rakshita1Bellundagi/Samruddi-Med-Pro.git',
+    demo_url: 'https://samruddi-med-pro.vercel.app'
   };
 
   return (
