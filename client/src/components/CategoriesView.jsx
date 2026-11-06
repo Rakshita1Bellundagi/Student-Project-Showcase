@@ -35,8 +35,8 @@ export default function CategoriesView({
     }
   });
 
-  const filteredTags = tags.filter(t => 
-    t.name.toLowerCase().includes(techSearch.toLowerCase())
+  const filteredTags = (tags || []).filter(t => 
+    t && t.name && t.name.toLowerCase().includes(techSearch.toLowerCase())
   );
 
   return (
@@ -97,9 +97,12 @@ export default function CategoriesView({
                 <div className="category-popular-tech">
                   <span className="category-tech-label">Key Technologies:</span>
                   <div className="category-tech-chips">
-                    {domain.keywords.slice(0, 4).map((kw) => (
-                      <span key={kw} className="category-tech-chip">#{kw}</span>
-                    ))}
+                    {domain.keywords.slice(0, 4).map((kw) => {
+                      const word = typeof kw === 'string' ? kw : kw.word;
+                      return (
+                        <span key={word} className="category-tech-chip">#{word}</span>
+                      );
+                    })}
                   </div>
                 </div>
 
